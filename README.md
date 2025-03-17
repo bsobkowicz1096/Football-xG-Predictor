@@ -1,4 +1,4 @@
-# :socceer: Football Expected Goals (xG) Predictor
+# ⚽ Football Expected Goals (xG) Predictor
 
 ## 🧠 O projekcie
 
