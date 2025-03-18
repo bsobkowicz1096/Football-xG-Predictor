@@ -84,5 +84,33 @@ Football-xG-Predictor/
 ├── requirements.txt            # Zależności
 └── README.md                   # Opis projektu/ ten plik
 ```
+## 🚀 Jak uruchomić?
+
+## Jak pobrać i uruchomić projekt
+
+1. Sklonuj repozytorium:
+   
+```bash
+git clone https://github.com/bsobkowicz1096/Football-xG-Predictor.git
+```
+2. Przejdź do katalogu projektu:
+
+```bash
+cd Football-xG-Predictor
+```
+3. Utwórz środowisko wirtualne (opcjonalne, ale rekomendowane):
+```bash
+python -m venv venv
+source venv/bin/activate  # Na Linuksie/macOS
+venv\Scripts\activate     # Na Windows
+```
+4. Zainstaluj zależności:
+```bash
+pip install -r requirements.txt
+```
+5. Uruchom notebook:
+```bash
+jupyter notebook notebooks/football_xg_predictor.ipynb
+```
 
 Uwaga: Projekt wykorzystuje publicznie dostępne dane StatsBomb, używane zgodnie z ich warunkami licencji.
