@@ -84,9 +84,8 @@ Football-xG-Predictor/
 ├── requirements.txt            # Zależności
 └── README.md                   # Opis projektu/ ten plik
 ```
-## 🚀 Jak uruchomić?
 
-## Jak pobrać i uruchomić projekt
+## 🚀 Jak pobrać i uruchomić projekt
 
 1. Sklonuj repozytorium:
    
