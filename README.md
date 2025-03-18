@@ -67,7 +67,7 @@ Zastosowanie techniki Beta Calibration do kalibracji prawdopodobieństw, co znac
 - **Źródło danych**: StatsBombPy
 
 ## 📁 Struktura projektu
-
+```
 Football-xG-Predictor/
 ├── data/                  # Folder z danymi
 ├── notebooks/             # Jupyter notebooks z analizami
@@ -78,6 +78,6 @@ Football-xG-Predictor/
 ├── assets/                # Grafiki i wizualizacje
 ├── requirements.txt       # Zależności
 └── README.md              # Ten plik
-
+```
 
 Uwaga: Projekt wykorzystuje publicznie dostępne dane StatsBomb, używane zgodnie z ich warunkami licencji.
