@@ -1,0 +1,21 @@
+# Biblioteki bazowe
+pandas==1.3.5
+numpy==1.21.5
+scipy==1.11.1
+
+# Uczenie maszynowe
+scikit-learn==1.6.1
+xgboost==2.1.4
+imbalanced-learn==0.12.4
+
+# Wizualizacja
+matplotlib==3.5.1
+seaborn==0.11.2
+mplsoccer==1.4.0
+
+# Statystyki
+statsmodels==0.5.3
+statsbombpy==1.14.0
+
+# Jupyter
+jupyter==1.0.0

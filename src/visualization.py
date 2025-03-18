@@ -1,18 +1,16 @@
+import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
+from scipy import stats
 from sklearn.metrics import roc_curve
 from mplsoccer import VerticalPitch
 from matplotlib.lines import Line2D
-from scipy import stats
-
-
 
 def create_quantile_efficiency(df, quantile_col, target_col, num_quantiles=15):
     """
     Tworzy kwantyle dla wybranej zmiennej i oblicza średnią wartość zmiennej docelowej dla każdego kwantyla.
-
     """
     # Tworzenie nowej kolumny z kwantylami
     quantile_name = f"{quantile_col}_quantile"
@@ -25,8 +23,7 @@ def create_quantile_efficiency(df, quantile_col, target_col, num_quantiles=15):
     
     return df_efficiency
 
-
-def plot_shot_accuracy_by_distance_and_y(eff_by_distance, eff_by_y):
+def plot_shot_accuracy_by_distance_and_y(eff_by_distance, eff_by_y, save_path=None):
     """
     Rysuje wykresy porównujące skuteczność strzału względem odległości od linii końcowej i pozycji Y.
     """
@@ -48,14 +45,18 @@ def plot_shot_accuracy_by_distance_and_y(eff_by_distance, eff_by_y):
     axes[1].set_ylabel('Skuteczność strzału', size=13)
 
     plt.tight_layout()
-    plt.show()
-
     
-def visualize_shot_situation(df, shot_index):
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano wykres do {save_path}")
+        
+    return fig, axes
+
+def visualize_shot_situation(df, shot_index, save_path=None):
     """
     Wizualizuje sytuację konkretnego strzału z uwzględnieniem ustawienia zawodników,
     trójkąta strzału i informacji o obrońcach na linii strzału.
-
     """
     # Pobranie danych o ustawieniu zawodników
     freeze_frame = df.loc[shot_index, 'shot_freeze_frame']
@@ -128,13 +129,17 @@ def visualize_shot_situation(df, shot_index):
     ax.legend(handles=legend_elements, loc='upper right')
     
     plt.tight_layout()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano wizualizację strzału do {save_path}")
+        
     return fig, ax
 
-
-def plot_binary_features_comparison(df, target_col='shot_outcome', features=None, figsize=(10, 8)):
+def plot_binary_features_comparison(df, target_col='shot_outcome', features=None, figsize=(10, 8), save_path=None):
     """
     Tworzy wykresy słupkowe porównujące skuteczność strzałów dla różnych binarnych cech.
-
     """
     if features is None:
         features = ['under_pressure', 'shot_first_time', 'normal_shot', 'open_play_shot', 'goalkeeper_in_path']
@@ -156,7 +161,6 @@ def plot_binary_features_comparison(df, target_col='shot_outcome', features=None
             # Wykres słupkowy
             axs_flat[i].bar(['Nie', 'Tak'], [goal_rate_0, goal_rate_1], color='blue', alpha=0.8)
             axs_flat[i].set_title(f'Procent goli: {feature}')
-            
     
     # Ukrycie pustych wykresów
     for i in range(n_features, len(axs_flat)):
@@ -167,13 +171,17 @@ def plot_binary_features_comparison(df, target_col='shot_outcome', features=None
         ax.grid(axis='y', linestyle='--', alpha=0.8)
     
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano porównanie cech binarnych do {save_path}")
+        
+    return fig, axs
 
-
-def plot_stacked_bar(df, group_col, title, xlabel):
+def plot_stacked_bar(df, group_col, title, xlabel, save_path=None):
     """
     Tworzy wykresy słupkowe porównujące skuteczność strzałów dla różnych zmiennych kategorialnych.
-
     """    
     # Grupowanie danych według wybranej kolumny i wyniku strzału
     counts = df.groupby([group_col, 'shot_outcome']).size().unstack(fill_value=0)
@@ -204,10 +212,15 @@ def plot_stacked_bar(df, group_col, title, xlabel):
     plt.grid(axis='y', linestyle='--', alpha=0.8)
     plt.xticks(rotation=45 if group_col == 'refined_body_part' else 0)
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano wykres słupkowy dla {group_col} do {save_path}")
+        
+    return fig, ax
 
-
-def plot_shot_success_heatmap(df, quantiles=5, show_corr=False):
+def plot_shot_success_heatmap(df, quantiles=5, show_corr=False, save_path=None):
     """
     Wizualizuje skuteczność strzałów w zależności od kwantyli dystansu i kąta.
     """
@@ -219,19 +232,25 @@ def plot_shot_success_heatmap(df, quantiles=5, show_corr=False):
     df_heatmap = df.groupby(['distance_quantile', 'angle_quantile'])['shot_outcome'].mean().unstack()
 
     # Wizualizacja
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(df_heatmap, annot=True, cmap='RdYlGn', fmt=".2f")
-    plt.title('Skuteczność strzałów w zależności od dystansu i kąta')
-    plt.xlabel('Kwantyl kąta strzału')
-    plt.ylabel('Kwantyl dystansu')
-    plt.show()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    heatmap = sns.heatmap(df_heatmap, annot=True, cmap='RdYlGn', fmt=".2f", ax=ax)
+    ax.set_title('Skuteczność strzałów w zależności od dystansu i kąta')
+    ax.set_xlabel('Kwantyl kąta strzału')
+    ax.set_ylabel('Kwantyl dystansu')
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano heatmapę skuteczności strzałów do {save_path}")
 
     # Opcjonalnie: korelacja
     if show_corr:
-        print(df[['angle', 'distance']].corr())
+        corr = df[['angle', 'distance']].corr()
+        print(corr)
+        
+    return fig, ax
 
-
-def plot_shot_effectiveness_by_quantiles(df, quantiles=15):
+def plot_shot_effectiveness_by_quantiles(df, quantiles=15, save_path=None):
     """
     Wizualizuje skuteczność strzałów w podziale na kwantyle dystansu i kąta strzału.
     """
@@ -264,9 +283,15 @@ def plot_shot_effectiveness_by_quantiles(df, quantiles=15):
     axes[1].set_ylabel('Skuteczność strzału')
 
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano wykresy skuteczności wg kwantyli do {save_path}")
+        
+    return fig, axes
 
-def plot_body_part_by_distance_quantile(df, quantiles=10):
+def plot_body_part_by_distance_quantile(df, quantiles=10, save_path=None):
     """
     Wizualizuje procentowy rozkład części ciała użytych do strzału 
     w podziale na kwantyle dystansu.
@@ -279,18 +304,23 @@ def plot_body_part_by_distance_quantile(df, quantiles=10):
     quantile_percentage = quantile_distribution.div(quantile_distribution.sum(axis=1), axis=0) * 100
 
     # Wizualizacja
-    plt.figure(figsize=(10, 6))
-    quantile_percentage.plot(kind='bar', stacked=True, alpha=0.8)
-    plt.title('Procentowy udział części ciała w strzałach według kwantyli dystansu')
-    plt.xlabel('Kwantyl dystansu')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    quantile_percentage.plot(kind='bar', stacked=True, alpha=0.8, ax=ax)
+    ax.set_title('Procentowy udział części ciała w strzałach według kwantyli dystansu')
+    ax.set_xlabel('Kwantyl dystansu')
+    ax.set_ylabel('Procent strzałów (%)')
+    ax.legend(title='Część ciała', loc='lower right')
     plt.xticks(rotation=0)
-    plt.ylabel('Procent strzałów (%)')
-    plt.legend(title='Część ciała', loc='lower right')
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano wykresy rozkładu części ciała wg dystansu do {save_path}")
+        
+    return fig, ax
 
-
-def plot_angle_distribution(df):
+def plot_angle_distribution(df, save_path=None):
     """
     Wizualizuje rozkład kąta strzału przed i po transformacji logarytmicznej.
     """
@@ -310,16 +340,21 @@ def plot_angle_distribution(df):
     axes[1].set_title(f'Rozkład zlogarytmizowanego kąta strzału (skośność: {log_angle_skew:.3f})')
 
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano histogramy rozkładu kąta strzału do {save_path}")
 
     # Wydruk wartości skośności
     print("Skośność oryginalnych zmiennych:")
     print(f"Kąt strzału: {angle_skew:.3f}")
     print("\nSkośność zlogarytmizowanych zmiennych:")
     print(f"Log(kąt strzału): {log_angle_skew:.3f}")
+    
+    return fig, axes
 
-
-def plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=None):
+def plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=None, save_path=None):
     """
     Rysuje krzywą ROC.
     Jeśli podano `ax`, rysuje na danym wykresie, w przeciwnym razie tworzy nowy wykres.
@@ -327,7 +362,9 @@ def plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=None):
     fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
     
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(7, 6))
+    else:
+        fig = ax.figure
     
     ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
     ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -337,15 +374,23 @@ def plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=None):
     ax.set_ylabel('True Positive Rate')
     ax.set_title('ROC', size=18)
     ax.legend(loc="lower right")
+    
+    if save_path and ax.get_figure() is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano krzywą ROC do {save_path}")
+    
+    return fig, ax
 
-
-def plot_expected_vs_actual_goals(total_xg, total_xg_beta, total_goals, xg_ratio, xg_beta_ratio, ax=None):
+def plot_expected_vs_actual_goals(total_xg, total_xg_beta, total_goals, xg_ratio, xg_beta_ratio, ax=None, save_path=None):
     """
     Rysuje wykres porównujący oczekiwane i rzeczywiste gole.
     Jeśli podano `ax`, rysuje na danym wykresie, w przeciwnym razie tworzy nowy wykres.
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 6))
+    else:
+        fig = ax.figure
     
     bar_labels = ['Raw xG', 'Beta Cal.', 'Actual Goals']
     bar_values = [total_xg, total_xg_beta, total_goals]
@@ -362,16 +407,23 @@ def plot_expected_vs_actual_goals(total_xg, total_xg_beta, total_goals, xg_ratio
     y_pos = max(bar_values) * 0.1
     ax.text(0, total_xg - y_pos, f"Ratio: {xg_ratio:.2f}", ha='center', fontsize=14)
     ax.text(1, total_xg_beta - y_pos, f"Ratio: {xg_beta_ratio:.2f}", ha='center', fontsize=14)
+    
+    if save_path and ax.get_figure() is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano porównanie goli do {save_path}")
+    
+    return fig, ax
 
-
-
-def plot_reliability_diagram(y_test, y_pred_proba, y_pred_proba_beta, ax=None):
+def plot_reliability_diagram(y_test, y_pred_proba, y_pred_proba_beta, ax=None, save_path=None):
     """
     Rysuje diagram wiarygodności.
     Jeśli podano `ax`, rysuje na danym wykresie, w przeciwnym razie tworzy nowy wykres.
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 6))
+    else:
+        fig = ax.figure
     
     bins = 10
     bin_edges = np.linspace(0, 1, bins + 1)
@@ -401,4 +453,10 @@ def plot_reliability_diagram(y_test, y_pred_proba, y_pred_proba_beta, ax=None):
     ax.grid(True)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-
+    
+    if save_path and ax.get_figure() is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Zapisano diagram wiarygodności do {save_path}")
+    
+    return fig, ax

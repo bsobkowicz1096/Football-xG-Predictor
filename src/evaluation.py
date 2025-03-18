@@ -1,17 +1,20 @@
+import os
 import numpy as np
-from scipy.optimize import minimize
-from sklearn.metrics import roc_auc_score, brier_score_loss, log_loss
-from sklearn.metrics import roc_curve
-from scipy.special import expit
 import matplotlib.pyplot as plt
-
-
-import sys
-sys.path.append('src')
+from scipy.optimize import minimize
+from scipy.special import expit
+from sklearn.metrics import roc_auc_score, brier_score_loss, log_loss, roc_curve
 
 from visualization import plot_roc_curve, plot_expected_vs_actual_goals, plot_reliability_diagram
 
-def evaluate_model(model, X_test, y_test, X_val, y_val):
+
+def get_model_viz_path(model_name, viz_type):
+    """Generuje standardową ścieżkę dla wizualizacji modelu."""
+    path = f"assets/models/{model_name}/{viz_type}.png"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
+
+def evaluate_model(model, X_test, y_test, X_val, y_val, save_plots=False, model_name=None):
     """
     Ocena modelu przy użyciu różnych metryk i kalibracji.
     """
@@ -67,13 +70,17 @@ def evaluate_model(model, X_test, y_test, X_val, y_val):
     
     # Wykresy
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
+    
     plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=axes[0])
     plot_expected_vs_actual_goals(total_xg, total_xg_beta, total_goals, xg_ratio, xg_beta_ratio, ax=axes[1])
     plot_reliability_diagram(y_test, y_pred_proba, y_pred_proba_beta, ax=axes[2])
-
+    
     plt.tight_layout()
-    plt.show()
+    
+    if save_plots and model_name:
+        plt.savefig(get_model_viz_path(model_name, "full_evaluation"), dpi=300, bbox_inches='tight')
+    else:
+        plt.show()
     
     # Zwracane metryki
     metrics = {

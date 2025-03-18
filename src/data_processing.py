@@ -1,9 +1,5 @@
-
 import os
 import pandas as pd
-import numpy as np
-import re
-import ast
 
 def load_data(file_path):
     """Wczytuje dane z pliku CSV."""

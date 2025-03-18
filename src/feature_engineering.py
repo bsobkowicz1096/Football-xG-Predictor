@@ -1,10 +1,9 @@
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-import re
-import ast
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+import ast
+import re   
 
 def transform_to_binary(df, column, positive_value, display_distribution=True):
     """

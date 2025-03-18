@@ -1,12 +1,8 @@
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 from imblearn.under_sampling import RandomUnderSampler
-
-import sys
-sys.path.append('src')
 
 from evaluation import evaluate_model
 
@@ -25,7 +21,8 @@ def prepare_train_test_split(X, y, test_size=0.2, random_state=42):
     
     return X_train, X_val, X_test, y_train, y_val, y_test
 
-def train_logistic_regression(X_train, y_train, X_val, y_val, X_test, y_test):
+
+def train_logistic_regression(X_train, y_train, X_val, y_val, X_test, y_test, save_plots=False):
     """
     Trenuje model regresji logistycznej z optymalizacją hiperparametrów za pomocą GridSearchCV.
     """
@@ -62,14 +59,14 @@ def train_logistic_regression(X_train, y_train, X_val, y_val, X_test, y_test):
 
     # Ewaluacja
     print("\nWyniki modelu:")
-    metrics_log_reg = evaluate_model(best_log_reg, X_test, y_test, X_val, y_val)
+    metrics_log_reg = evaluate_model(best_log_reg, X_test, y_test, X_val, y_val, "logistic_regression" if save_plots else None)
     
     for metric, value in metrics_log_reg.items():
         print(f'{metric}: {value}')
 
 
 
-def train_random_forest(X_train, y_train, X_val, y_val, X_test, y_test):
+def train_random_forest(X_train, y_train, X_val, y_val, X_test, y_test, save_plots=False):
     """
     Trenuje model lasów losowych z optymalizacją hiperparametrów za pomocą GridSearchCV.
     """
@@ -107,14 +104,14 @@ def train_random_forest(X_train, y_train, X_val, y_val, X_test, y_test):
 
     # Ewaluacja modelu
     print("\nWyniki modelu:")
-    metrics_rf = evaluate_model(best_rf, X_test, y_test, X_val, y_val)
+    metrics_rf = evaluate_model(best_rf, X_test, y_test, X_val, y_val, "random_forest" if save_plots else None)
     
     for metric, value in metrics_rf.items():
         print(f'{metric}: {value}')
 
 
 
-def train_xgboost(X_train, y_train, X_val, y_val, X_test, y_test):
+def train_xgboost(X_train, y_train, X_val, y_val, X_test, y_test, save_plots=False):
     """
     Trenuje model XGBoost z optymalizacją hiperparametrów za pomocą GridSearchCV.
     """
@@ -157,7 +154,7 @@ def train_xgboost(X_train, y_train, X_val, y_val, X_test, y_test):
 
     # Ewaluacja modelu
     print("\nWyniki modelu:")
-    metrics_xgb = evaluate_model(best_xgb, X_test, y_test, X_val, y_val)
+    metrics_xgb = evaluate_model(best_xgb, X_test, y_test, X_val, y_val, "xgboost" if save_plots else None)
     
     for metric, value in metrics_xgb.items():
         print(f'{metric}: {value}')
