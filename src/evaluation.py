@@ -5,7 +5,7 @@ from scipy.optimize import minimize
 from scipy.special import expit
 from sklearn.metrics import roc_auc_score, brier_score_loss, log_loss, roc_curve
 
-from visualization import plot_roc_curve, plot_expected_vs_actual_goals, plot_reliability_diagram
+from .visualization import plot_roc_curve, plot_expected_vs_actual_goals, plot_reliability_diagram
 
 
 def get_model_viz_path(model_name, viz_type):

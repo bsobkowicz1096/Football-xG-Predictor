@@ -4,7 +4,7 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 from imblearn.under_sampling import RandomUnderSampler
 
-from evaluation import evaluate_model
+from .evaluation import evaluate_model
 
 
 
