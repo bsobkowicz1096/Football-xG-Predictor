@@ -19,6 +19,8 @@ The data used comes from StatsBomb's open dataset from the 2015/2016 season for 
 
 The data contains detailed information about each shot, including position on the pitch, shot type, circumstances of the shot, and positioning of other players at the moment of the shot.
 
+**Note**: The repository does not include data files by default. You need to run the `data_collector.ipynb` notebook first to download the data from StatsBomb's open dataset.
+
 https://github.com/statsbomb/open-data
 
 ## 🔍 Methodology
@@ -79,7 +81,7 @@ Football-xG-Predictor/
 │   ├── modeling.py             # Model implementation
 │   ├── evaluation.py           # Metrics and model evaluation
 │   └── visualization.py        # Visualizations
-├── data/                       # Data folder
+├── data/                       # Data folder (created after running data_collector.ipynb)
 ├── assets/                     # Graphics and visualizations
 ├── requirements.txt            # Dependencies
 └── README.md                   # Project description / this file
