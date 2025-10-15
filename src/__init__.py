@@ -1,5 +1,5 @@
 """
-xG Predictor Package - Narzędzia do modelowania Expected Goals w piłce nożnej
+xG Predictor Package - Tools for modeling Expected Goals in football
 """
 
 __version__ = '0.1.0'

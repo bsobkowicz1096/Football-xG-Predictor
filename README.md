@@ -1,115 +1,115 @@
 # ⚽ Football Expected Goals (xG) Predictor
 
-## 🧠 O projekcie
+## 🧠 About the Project
 
-Model Expected Goals (xG) przewidujący prawdopodobieństwo strzelenia bramki na podstawie danych z StatsBomb. Projekt wykorzystuje techniki uczenia maszynowego do analizy czynników najbardziej wpływających na skuteczność strzałów w piłce nożnej. Zastosowane modele (Regresja Logistyczna, Random Forest, XGBoost) wraz z techniką kalibracji Beta tworzą narzędzie o wysokiej dokładności predykcyjnej. Wyniki analizy potwierdzają kluczową rolę geometrii strzału oraz wpływu obrońców na prawdopodobieństwo zdobycia bramki.
+An Expected Goals (xG) model that predicts the probability of scoring based on StatsBomb data. The project uses machine learning techniques to analyze factors most influencing shot effectiveness in football. Applied models (Logistic Regression, Random Forest, XGBoost) combined with Beta calibration technique create a highly accurate predictive tool. Analysis results confirm the crucial role of shot geometry and defender influence on goal-scoring probability.
 
-## 🎯 Motywacja
+## 🎯 Motivation
 
-Expected Goals (xG) to jedna z najważniejszych miar stosowanych we współczesnej analizie piłkarskiej. Pozwala ona na ocenę jakości sytuacji strzeleckich niezależnie od tego, czy zakończyły się one bramką. W tym projekcie zbudowałem własny model xG, aby lepiej zrozumieć czynniki wpływające na skuteczność strzałów oraz stworzyć narzędzie, które może służyć do analizy meczów i oceny zawodników.
+Expected Goals (xG) is one of the most important metrics used in modern football analytics. It allows for evaluating shot quality regardless of whether they resulted in a goal. In this project, I built my own xG model to better understand factors affecting shot effectiveness and create a tool that can be used for match analysis and player evaluation.
 
-## 📋 Dane
+## 📋 Data
 
-Wykorzystane dane pochodzą z ogólnodostępnego zbioru StatsBomb z sezonu 2015/2016 dla pięciu czołowych lig europejskich:
-- Premier League (Anglia)
-- La Liga (Hiszpania)
-- Bundesliga (Niemcy)
-- Serie A (Włochy)
-- Ligue 1 (Francja)
+The data used comes from StatsBomb's open dataset from the 2015/2016 season for five top European leagues:
+- Premier League (England)
+- La Liga (Spain)
+- Bundesliga (Germany)
+- Serie A (Italy)
+- Ligue 1 (France)
 
-Dane zawierają szczegółowe informacje o każdym strzale, w tym pozycję na boisku, typ strzału, okoliczności jego oddania oraz ustawienie innych zawodników w momencie strzału.
+The data contains detailed information about each shot, including position on the pitch, shot type, circumstances of the shot, and positioning of other players at the moment of the shot.
 
 https://github.com/statsbomb/open-data
 
-## 🔍 Metodologia
+## 🔍 Methodology
 
-### Przygotowanie danych
-- Ekstrakcja istotnych zmiennych związanych ze strzałami
-- Przekształcenie surowych danych lokalizacyjnych na użyteczne cechy geometryczne
-- Kategoryzacja typów strzałów i części ciała użytych do ich oddania
+### Data Preparation
+- Extraction of relevant shot-related variables
+- Transformation of raw location data into useful geometric features
+- Categorization of shot types and body parts used for shots
 
-### Inżynieria cech
-- **Geometryczne**: kąt strzału, odległość od bramki
-- **Kontekstowe**: liczba obrońców na linii strzału, obecność bramkarza
-- **Techniczne**: strzały nogą dominującą vs niedominującą, strzały z pierwszej piłki
-- **Sytuacyjne**: strzały pod presją, strzały po dryblingu
+### Feature Engineering
+- **Geometric**: shot angle, distance from goal
+- **Contextual**: number of defenders on shot line, goalkeeper presence
+- **Technical**: dominant vs non-dominant foot shots, first-time shots
+- **Situational**: shots under pressure, shots after dribbling
 
-### Modelowanie
-Testowanie i porównanie trzech algorytmów:
-1. Regresja Logistyczna
+### Modeling
+Testing and comparison of three algorithms:
+1. Logistic Regression
 2. Random Forest
 3. XGBoost
 
-### Kalibracja modelu
-Zastosowanie techniki Beta Calibration do kalibracji prawdopodobieństw, co znacząco poprawiło jakość predykcji modelu.
+### Model Calibration
+Application of Beta Calibration technique to calibrate probabilities, which significantly improved model prediction quality.
 
-## 📈 Kluczowe wyniki
+## 📈 Key Results
 
-### Porównanie modeli
+### Model Comparison
 | Model               | ROC AUC | Brier Score | Log Loss | xG/Goals Ratio |
 |---------------------|---------|-------------|----------|----------------|
-| Regresja Logistyczna| 0.796   | 0.073       | 0.257    | 0.98           |
+| Logistic Regression | 0.796   | 0.073       | 0.257    | 0.98           |
 | Random Forest       | 0.796   | 0.074       | 0.259    | 0.99           |
 | XGBoost             | 0.798   | 0.073       | 0.257    | 0.98           |
 
-### Najważniejsze odkrycia
-1. **Geometria strzału** ma kluczowe znaczenie - kąt strzału i odległość od bramki to najsilniejsze predyktory
-2. **Obrońcy na linii strzału** - każdy dodatkowy obrońca znacząco zmniejsza prawdopodobieństwo zdobycia bramki
-3. **Strzały z pierwszej piłki** mają wyższą skuteczność niż te poprzedzone przyjęciem
-4. **Kalibracja modeli** jest kluczowa - wszystkie modele przed kalibracją znacząco przeszacowywały prawdopodobieństwa
+### Key Findings
+1. **Shot geometry** is crucial - shot angle and distance from goal are the strongest predictors
+2. **Defenders on shot line** - each additional defender significantly decreases goal-scoring probability
+3. **First-time shots** have higher effectiveness than those preceded by ball control
+4. **Model calibration** is crucial - all models before calibration significantly overestimated probabilities
 
-## 💻 Technologie
+## 💻 Technologies
 
-- **Język**: Python 3.7+
-- **Analiza danych**: Pandas, NumPy
-- **Modele ML**: Scikit-learn, XGBoost
-- **Wizualizacja**: Matplotlib, Seaborn, Mplsoccer
-- **Źródło danych**: StatsBombPy
+- **Language**: Python 3.7+
+- **Data Analysis**: Pandas, NumPy
+- **ML Models**: Scikit-learn, XGBoost
+- **Visualization**: Matplotlib, Seaborn, Mplsoccer
+- **Data Source**: StatsBombPy
 
-## 📁 Struktura projektu
+## 📁 Project Structure
 ```
 Football-xG-Predictor/
 ├── notebooks/                 
-│   ├── data_collection.py      # Skrypt do zbierania danych
-│   └── xg_model.ipynb          # Główny notebook z modelem xG
+│   ├── data_collection.py      # Data collection script
+│   └── xg_model.ipynb          # Main notebook with xG model
 ├── src/                        
-│   ├── __init__.py             # Plik inicjalizujący pakiet
-│   ├── preprocessing.py        # Funkcje do przetwarzania danych
-│   ├── feature_engineering.py  # Inżynieria cech
-│   ├── modeling.py             # Implementacja modeli
-│   ├── evaluation.py           # Metryki i ocena modeli
-│   └── visualization.py        # Wizualizacje
-├── data/                       # Folder z danymi
-├── assets/                     # Grafiki i wizualizacje
-├── requirements.txt            # Zależności
-└── README.md                   # Opis projektu/ ten plik
+│   ├── __init__.py             # Package initialization file
+│   ├── preprocessing.py        # Data preprocessing functions
+│   ├── feature_engineering.py  # Feature engineering
+│   ├── modeling.py             # Model implementation
+│   ├── evaluation.py           # Metrics and model evaluation
+│   └── visualization.py        # Visualizations
+├── data/                       # Data folder
+├── assets/                     # Graphics and visualizations
+├── requirements.txt            # Dependencies
+└── README.md                   # Project description / this file
 ```
 
-## 🚀 Jak pobrać i uruchomić projekt
+## 🚀 How to Download and Run the Project
 
-1. Sklonuj repozytorium:
+1. Clone the repository:
    
 ```bash
 git clone https://github.com/bsobkowicz1096/Football-xG-Predictor.git
 ```
-2. Przejdź do katalogu projektu:
+2. Navigate to the project directory:
 
 ```bash
 cd Football-xG-Predictor
 ```
-3. Utwórz środowisko wirtualne (opcjonalne, ale rekomendowane):
+3. Create a virtual environment (optional but recommended):
 ```bash
 python -m venv venv
-source venv/bin/activate  # Na Linuksie/macOS
-venv\Scripts\activate     # Na Windows
+source venv/bin/activate  # On Linux/macOS
+venv\Scripts\activate     # On Windows
 ```
-4. Zainstaluj zależności:
+4. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-5. Uruchom notebook:
+5. Run the notebook:
 ```bash
 jupyter notebook notebooks/football_xg_predictor.ipynb
 ```
 
-Uwaga: Projekt wykorzystuje publicznie dostępne dane StatsBomb, używane zgodnie z ich warunkami licencji.
+Note: The project uses publicly available StatsBomb data, used in accordance with their license terms.
