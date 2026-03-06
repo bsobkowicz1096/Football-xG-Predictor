@@ -9,6 +9,17 @@ from sklearn.metrics import roc_curve
 from mplsoccer import VerticalPitch
 from matplotlib.lines import Line2D
 
+# --- Global font ---
+plt.rcParams['font.family'] = 'Segoe UI'
+
+# --- Inferno-derived palette (consistent across all plots) ---
+INFERNO_DARK    = '#2b0b57'   # 0.15 — deep purple
+INFERNO_PRIMARY = '#6a176e'   # 0.30 — purple
+INFERNO_ACCENT  = '#a82e5f'   # 0.45 — magenta-red
+INFERNO_WARM    = '#dd513a'   # 0.60 — orange-red
+INFERNO_BRIGHT  = '#f98e09'   # 0.75 — orange
+INFERNO_LIGHT   = '#f6d746'   # 0.90 — yellow
+
 def create_quantile_efficiency(df, quantile_col, target_col, num_quantiles=15):
     """
     Creates quantiles for selected variable and calculates mean target variable value for each quantile.
@@ -33,14 +44,14 @@ def plot_shot_accuracy_by_distance_and_y(eff_by_distance, eff_by_y, save_path=No
 
     sns.barplot(x=eff_by_distance['distance_to_end_line_quantile'].astype(str), 
                 y=eff_by_distance['shot_outcome'], 
-                ax=axes[0])
+                ax=axes[0], color=INFERNO_WARM)
     axes[0].set_title('Shot effectiveness vs distance from end line (quantiles)', size=16)
     axes[0].set_xlabel('Distance from end line quantile', size=13)
     axes[0].set_ylabel('Shot effectiveness', size=13)
 
     sns.barplot(x=eff_by_y['y_quantile'].astype(str), 
                 y=eff_by_y['shot_outcome'], 
-                ax=axes[1])
+                ax=axes[1], color=INFERNO_WARM)
     axes[1].set_title('Shot effectiveness vs Y position (quantiles)', size=16)
     axes[1].set_xlabel('Y position quantile', size=13)
     axes[1].set_ylabel('Shot effectiveness', size=13)
@@ -89,18 +100,18 @@ def visualize_shot_situation(df, shot_index, save_path=None):
             continue
         
         if player.get('teammate', False):
-            jersey_color = 'blue'
+            jersey_color = INFERNO_BRIGHT
         else:
             if player.get('position', {}).get('name') == 'Goalkeeper':
-                jersey_color = 'yellow'
+                jersey_color = INFERNO_ACCENT
             else:
-                jersey_color = 'red'
+                jersey_color = INFERNO_DARK
         
         ax.plot(y, x, 'o', markersize=10, color=jersey_color, zorder=2)
         
     # Draw shooter and shot lines
     if striker_x >= 60:
-        ax.plot(striker_y, striker_x, 'o', markersize=12, color='lime', zorder=4)
+        ax.plot(striker_y, striker_x, 'o', markersize=12, color=INFERNO_LIGHT, zorder=4)
         ax.text(striker_y, striker_x - 3, f"SHOOTER", ha='center', fontsize=10, fontweight='bold', 
                 bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', pad=1), zorder=5)
         
@@ -111,7 +122,7 @@ def visualize_shot_situation(df, shot_index, save_path=None):
         # Shot triangle
         triangle = plt.Polygon(
             [[striker_y, striker_x], [goal_left[1], goal_left[0]], [goal_right[1], goal_right[0]]],
-            alpha=0.4, color='yellow', zorder=0
+            alpha=0.3, color=INFERNO_LIGHT, zorder=0
         )
         ax.add_patch(triangle)
     
@@ -122,10 +133,10 @@ def visualize_shot_situation(df, shot_index, save_path=None):
     
     # Legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Shooting team'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Defending team'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='yellow', markersize=10, label='Goalkeeper'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='lime', markersize=10, label='Shooter')
+        Line2D([0], [0], marker='o', color='w', markerfacecolor=INFERNO_BRIGHT, markersize=10, label='Shooting team'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor=INFERNO_DARK, markersize=10, label='Defending team'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor=INFERNO_ACCENT, markersize=10, label='Goalkeeper'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor=INFERNO_LIGHT, markersize=10, label='Shooter')
     ]
     ax.legend(handles=legend_elements, loc='upper right')
     
@@ -160,7 +171,7 @@ def plot_binary_features_comparison(df, target_col='shot_outcome', features=None
             goal_rate_1 = df[df[feature] == 1][target_col].mean() * 100
             
             # Bar chart
-            axs_flat[i].bar(['No', 'Yes'], [goal_rate_0, goal_rate_1], color='blue', alpha=0.8)
+            axs_flat[i].bar(['No', 'Yes'], [goal_rate_0, goal_rate_1], color=[INFERNO_DARK, INFERNO_BRIGHT], alpha=0.9)
             axs_flat[i].set_title(f'Goal percentage: {feature}')
     
     # Hide empty plots
@@ -194,7 +205,7 @@ def plot_stacked_bar(df, group_col, title, xlabel, save_path=None):
     fig, ax = plt.subplots(figsize=(8, 5))
 
     # Stacked bar chart
-    counts.plot(kind='bar', stacked=True, ax=ax, color=['red', 'green'], alpha=0.8)
+    counts.plot(kind='bar', stacked=True, ax=ax, color=[INFERNO_DARK, INFERNO_BRIGHT], alpha=0.9)
 
     # Labels and title
     ax.set_title(title, fontsize=14)
@@ -223,34 +234,38 @@ def plot_stacked_bar(df, group_col, title, xlabel, save_path=None):
 
 def plot_passes_in_sequence_effectiveness(df, save_path=None):
     """
-    Stacked bar chart of goals vs non-goals by n_passes_in_sequence,
-    grouped into bins: 0, 1, 2-3, 4-5, 6-7, 8-9, 10+.
+    Bar chart showing goal rate (%) by n_passes_in_sequence.
+    Individual values 0-9, then 10+ grouped. Y-axis scaled to 0-15%.
     """
-    bins   = [-1, 0, 1, 3, 5, 7, 9, np.inf]
-    labels = ['0', '1', '2-3', '4-5', '6-7', '8-9', '10+']
-
     df = df.copy()
-    df['passes_bin'] = pd.cut(df['n_passes_in_sequence'], bins=bins, labels=labels)
+    df['passes_bin'] = df['n_passes_in_sequence'].clip(upper=10).astype(int)
 
-    counts = df.groupby(['passes_bin', 'shot_outcome']).size().unstack(fill_value=0)
-    if set(counts.columns) == {0, 1}:
-        counts.columns = ['No-goal', 'Goal']
+    stats = df.groupby('passes_bin')['shot_outcome'].agg(['mean', 'sum', 'count'])
+    stats['goal_rate'] = stats['mean'] * 100
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    counts.plot(kind='bar', stacked=True, ax=ax, color=['red', 'green'], alpha=0.8)
+    labels = [str(i) for i in range(10)] + ['10+']
+    x = np.arange(len(labels))
 
-    for i, idx in enumerate(counts.index):
-        total = counts.loc[idx].sum()
-        if total > 0:
-            goal_rate = counts.loc[idx, 'Goal'] / total * 100
-            ax.text(i, total + 5, f"{goal_rate:.1f}%", ha='center', fontweight='bold', size=12)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.bar(x, stats['goal_rate'].values, color=INFERNO_WARM, alpha=0.9, width=0.7)
 
+    for i in range(len(labels)):
+        rate = stats['goal_rate'].iloc[i]
+        ax.annotate(f"{rate:.1f}%", (x[i], rate),
+                    textcoords='offset points', xytext=(0, 6),
+                    ha='center', fontsize=11, fontweight='bold')
+
+    ax.axhline(y=df['shot_outcome'].mean() * 100, color='gray', linestyle='--',
+               alpha=0.7, label=f"Average ({df['shot_outcome'].mean()*100:.1f}%)")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(0, 15)
     ax.set_title('Shot effectiveness by passes in sequence', fontsize=14)
     ax.set_xlabel('Number of passes in sequence', fontsize=12)
-    ax.set_ylabel('Number of shots', fontsize=12)
-    ax.legend(title='Shot outcome')
-    plt.grid(axis='y', linestyle='--', alpha=0.8)
-    plt.xticks(rotation=0)
+    ax.set_ylabel('Goal rate (%)', fontsize=12)
+    ax.legend(loc='upper right')
+    plt.grid(axis='y', linestyle='--', alpha=0.4)
     plt.tight_layout()
 
     if save_path:
@@ -274,7 +289,7 @@ def plot_shot_success_heatmap(df, quantiles=5, show_corr=False, save_path=None):
 
     # Visualization
     fig, ax = plt.subplots(figsize=(10, 6))
-    heatmap = sns.heatmap(df_heatmap, annot=True, cmap='RdYlGn', fmt=".2f", ax=ax)
+    heatmap = sns.heatmap(df_heatmap, annot=True, cmap='inferno_r', fmt=".2f", ax=ax)
     ax.set_title('Shot effectiveness by distance and angle')
     ax.set_xlabel('Shot angle quantile')
     ax.set_ylabel('Distance quantile')
@@ -312,13 +327,13 @@ def plot_shot_effectiveness_by_quantiles(df, quantiles=15, save_path=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     sns.barplot(x=df_eff_distance['distance_quantile'].astype(str), 
-                y=df_eff_distance['shot_outcome'], ax=axes[0])
+                y=df_eff_distance['shot_outcome'], ax=axes[0], color=INFERNO_WARM)
     axes[0].set_title('Shot effectiveness vs distance (quantiles)')
     axes[0].set_xlabel('Distance quantile')
     axes[0].set_ylabel('Shot effectiveness')
 
     sns.barplot(x=df_eff_angle['angle_quantile'].astype(str), 
-                y=df_eff_angle['shot_outcome'], ax=axes[1])
+                y=df_eff_angle['shot_outcome'], ax=axes[1], color=INFERNO_WARM)
     axes[1].set_title('Shot effectiveness vs shot angle (quantiles)')
     axes[1].set_xlabel('Shot angle quantile')
     axes[1].set_ylabel('Shot effectiveness')
@@ -346,7 +361,8 @@ def plot_body_part_by_distance_quantile(df, quantiles=10, save_path=None):
 
     # Visualization
     fig, ax = plt.subplots(figsize=(10, 6))
-    quantile_percentage.plot(kind='bar', stacked=True, alpha=0.8, ax=ax)
+    quantile_percentage.plot(kind='bar', stacked=True, alpha=0.9, ax=ax,
+                               color=[INFERNO_DARK, INFERNO_WARM, INFERNO_BRIGHT])
     ax.set_title('Percentage share of body parts in shots by distance quantiles')
     ax.set_xlabel('Distance quantile')
     ax.set_ylabel('Percentage of shots (%)')
@@ -374,10 +390,10 @@ def plot_angle_distribution(df, save_path=None):
 
     # Histograms
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    sns.histplot(df['angle'], kde=True, ax=axes[0])
+    sns.histplot(df['angle'], kde=True, ax=axes[0], color=INFERNO_WARM)
     axes[0].set_title(f'Shot angle distribution (skewness: {angle_skew:.3f})')
 
-    sns.histplot(df['log_angle'], kde=True, ax=axes[1])
+    sns.histplot(df['log_angle'], kde=True, ax=axes[1], color=INFERNO_WARM)
     axes[1].set_title(f'Log shot angle distribution (skewness: {log_angle_skew:.3f})')
 
     plt.tight_layout()
@@ -414,7 +430,7 @@ def plot_goalkeeper_distance_ratio_distribution(df, save_path=None):
         label='No Goal', 
         fill=True, 
         alpha=0.5, 
-        color='skyblue',
+        color=INFERNO_DARK,
         ax=ax
     )
     sns.kdeplot(
@@ -423,7 +439,7 @@ def plot_goalkeeper_distance_ratio_distribution(df, save_path=None):
         label='Goal', 
         fill=True, 
         alpha=0.5, 
-        color='coral',
+        color=INFERNO_BRIGHT,
         ax=ax
     )
     
@@ -455,8 +471,8 @@ def plot_roc_curve(y_test, y_pred_proba, roc_auc, ax=None, save_path=None):
     else:
         fig = ax.figure
     
-    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
-    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    ax.plot(fpr, tpr, color=INFERNO_ACCENT, lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+    ax.plot([0, 1], [0, 1], color=INFERNO_DARK, lw=2, linestyle='--')
     ax.set_xlim([0.0, 1.0])
     ax.set_ylim([0.0, 1.05])
     ax.set_xlabel('False Positive Rate')
@@ -487,27 +503,23 @@ def plot_expected_vs_actual_goals(total_goals, xg_raw, calibrated, ax=None, save
     else:
         fig = ax.figure
 
-    palette = ['skyblue', 'orange', 'mediumseagreen', 'orchid']
+    palette = [INFERNO_WARM, INFERNO_BRIGHT, INFERNO_LIGHT, INFERNO_ACCENT]
     cal_names  = list(calibrated.keys())
     cal_totals = [v for v, _ in calibrated.values()]
     cal_ratios = [r for _, r in calibrated.values()]
 
     bar_labels = ['Raw xG'] + cal_names + ['Actual Goals']
     bar_values = [xg_raw]  + cal_totals + [total_goals]
-    bar_colors = palette[:1 + len(calibrated)] + ['navy']
+    bar_colors = palette[:1 + len(calibrated)] + [INFERNO_DARK]
 
     ax.bar(bar_labels, bar_values, color=bar_colors)
-    ax.axhline(y=total_goals, color='red', linestyle='--')
+    ax.axhline(y=total_goals, color=INFERNO_ACCENT, linestyle='--')
     ax.set_ylabel('Goals', size=14)
     ax.set_title('Expected vs Actual Goals', size=18)
 
-    y_offset = max(bar_values) * 0.02
     all_ratios = [xg_raw / total_goals] + cal_ratios
     for i, (v, r) in enumerate(zip(bar_values[:-1], all_ratios)):
-        ax.text(i, v + y_offset * 2, f"{v:.1f}", ha='center', fontsize=12)
-        ax.text(i, v - y_offset * 6, f"Ratio: {r:.2f}", ha='center', fontsize=11)
-    ax.text(len(bar_labels) - 1, total_goals + y_offset * 2,
-            f"{total_goals:.0f}", ha='center', fontsize=12)
+        ax.text(i, 800, f"Ratio: {r:.2f}", ha='center', fontsize=11, fontweight='bold')
 
     if save_path and ax.get_figure() is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -548,27 +560,27 @@ def plot_reliability_diagram(y_test, y_pred_proba, calibrated, ax=None, save_pat
         return mean_pred, mean_true
 
     styles = {
-        'Beta':     ('s-', 'orange'),
-        'Isotonic': ('^-', 'mediumseagreen'),
-        'Platt':    ('D-', 'orchid'),
+        'Beta':     ('s-', INFERNO_BRIGHT),
+        'Isotonic': ('^-', INFERNO_LIGHT),
+        'Platt':    ('D-', INFERNO_ACCENT),
     }
 
     mean_pred, mean_true = calc_reliability(y_test, y_pred_proba)
-    ax.plot(mean_pred, mean_true, 'o-', color='skyblue', label='Raw')
+    ax.plot(mean_pred, mean_true, 'o-', color=INFERNO_WARM, label='Raw')
     for name, preds in calibrated.items():
         marker, color = styles.get(name, ('x-', 'gray'))
         mean_pred, mean_true = calc_reliability(y_test, preds)
         ax.plot(mean_pred, mean_true, marker, color=color, label=name)
 
-    ax.plot([0, 0.4], [0, 0.4], 'k--', color='navy', label='Perfect')
+    ax.plot([0, 0.5], [0, 0.5], 'k--', color=INFERNO_DARK, label='Perfect')
 
     ax.set_xlabel('Predicted probability', size=14)
     ax.set_ylabel('Observed frequency', size=14)
     ax.set_title('Reliability Diagram', size=18)
     ax.legend(loc='upper left')
     ax.grid(True)
-    ax.set_xlim(0, 0.4)
-    ax.set_ylim(0, 0.4)
+    ax.set_xlim(0, 0.5)
+    ax.set_ylim(0, 0.5)
 
     if save_path and ax.get_figure() is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -600,7 +612,7 @@ def plot_xg_scatter(x_coords, y_coords, xg_predictions, save_path=None):
         x_coords, y_coords,
         c=xg_predictions, cmap='inferno_r',
         vmin=0, vmax=1,
-        s=15, alpha=0.6, linewidths=0,
+        s=30, alpha=0.8, linewidths=0,
         ax=ax, zorder=3
     )
 
@@ -630,16 +642,22 @@ def plot_xg_scatter(x_coords, y_coords, xg_predictions, save_path=None):
 
 
 
-def plot_xg_shap_summary(model, X_test, model_name, ax=None, save_path=None):
+def plot_xg_shap_summary(model, X_test, model_name, X_background=None, ax=None, save_path=None):
     """
-    SHAP plot for checking variable influence.
+    SHAP summary plot showing each feature's contribution to goal probability.
+    X_background: background dataset for interventional feature perturbation
+    (required for model_output='probability'; typically a sample of X_train).
     """
-    
-    explainer = shap.TreeExplainer(model)
+    explainer = shap.TreeExplainer(
+        model,
+        data=X_background,
+        model_output='probability',
+        feature_perturbation='interventional',
+    )
     shap_values = explainer.shap_values(X_test)
 
     plt.figure(figsize=(12, 8))
-    shap.summary_plot(shap_values, X_test, show=False)
+    shap.summary_plot(shap_values, X_test, show=False, cmap='inferno_r')
     plt.title(f"SHAP analysis - {model_name}")
     plt.show()
 

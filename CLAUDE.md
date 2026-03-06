@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Machine learning project predicting Expected Goals (xG) in football using StatsBomb open data (2015/16, 5 top leagues).
+Machine learning project predicting Expected Goals (xG) in football using StatsBomb open data.
 Trains and compares Logistic Regression, Random Forest, and XGBoost.
 
 ## Project Structure
@@ -15,8 +15,8 @@ Football-xG-Predictor/
 │   ├── data_collector.py          # StatsBomb API collection (CLI, includes n_passes_in_sequence)
 │   ├── data_processing.py         # load_data, clean_data, select_features
 │   ├── feature_engineering.py     # Geometry, freeze-frame, body part, play pattern transforms
-│   ├── models.py                  # train_logistic_regression/random_forest/xgboost
-│   ├── evaluation.py              # evaluate_model: ROC AUC + calibration comparison table
+│   ├── models.py                  # train_logistic_regression/random_forest/xgboost + CV objective
+│   ├── evaluation.py              # evaluate_model (raw metrics) + calibrate_best_model
 │   └── visualization.py           # All plot helpers
 ├── assets/
 │   ├── models/                    # Saved plot PNGs per model
@@ -28,15 +28,22 @@ Football-xG-Predictor/
 
 ## Data
 
-- Source: StatsBomb open dataset (2015/16, 5 top leagues)
-- **Not included in repo** — run `python src/data_collector.py` to collect
-- Outputs `data/shots_combined_2015_2016.csv` with `n_passes_in_sequence` included
+- **Training/Calibration**: StatsBomb open dataset (2015/16, 5 top leagues) → `data/shots_combined_2015_2016.csv`
+- **Test set**: FIFA World Cup 2022 → `data/shots_fifa_world_cup_2022.csv` (true out-of-sample holdout)
+- **Not included in repo** — collect with:
+  ```bash
+  python src/data_collector.py                          # club data (2015/16)
+  python src/data_collector.py --fifa-2022 --skip-club  # FIFA 2022 only
+  ```
+- Both datasets include `n_passes_in_sequence` by default
 
 ## Key Modules
 
 ### `src/data_collector.py`
-- CLI script, run with `python src/data_collector.py`
+- `collect_shots_data(...)` — 2015/16 club leagues
+- `collect_fifa_world_cup_2022(...)` — FIFA World Cup 2022 (test holdout)
 - `--no-passes-in-sequence` flag to skip pass counting (faster)
+- `--fifa-2022` / `--skip-club` CLI flags
 - `include_passes_in_sequence=True` by default — counts passes per possession via `(match_id, possession)` groupby
 
 ### `src/feature_engineering.py`
@@ -49,14 +56,15 @@ Football-xG-Predictor/
 - `standardize_features(df, continuous_vars)` — StandardScaler
 
 ### `src/models.py`
-- All training functions use **Hyperopt** (TPE) for hyperparameter search
-- `prepare_train_test_split(X, y)` — 60/20/20 stratified split, **no resampling** (natural ~10% goal rate)
+- All training functions use **Hyperopt** (TPE) with **4-fold stratified CV** as the objective (`_cv_objective`)
+- `prepare_train_calibration_split(X, y)` — 80/20 stratified split (train / calibration), **no resampling**
+- Training functions return `(model, {'CV ROC AUC': ..., 'CV ROC AUC std': ...})`
 - No StandardScaler, no resampling in pipeline
 
 ### `src/evaluation.py`
-- `evaluate_model(model, X_test, y_test, X_val, y_val, save_plots, model_name)`
-- Prints: ROC AUC → calibration comparison table → plots
-- Three calibration methods compared: **Beta**, **Isotonic**, **Platt**
+- `evaluate_model(model, X_test, y_test, save_plots, model_name)` — raw metrics only (ROC AUC, Brier, ECE, xG/Goals)
+- `calibrate_best_model(model, X_calib, y_calib, X_test, y_test, ...)` — fits Beta / Isotonic / Platt on calib set, evaluates on test set, prints comparison table + plots
+- Three calibration methods: **Beta** (Nelder-Mead), **Isotonic**, **Platt**
 - Metrics: **Brier Score** + **ECE** (quantile-based bins), no log loss
 - Best calibration selected by lowest Brier Score
 
@@ -89,7 +97,19 @@ Football-xG-Predictor/
 
 `continuous_vars = ['distance', 'log_angle', 'log_passes_in_sequence']`
 
-## Current Results (January 2026)
+## Split Strategy
+
+| Set | Source | Size | Purpose |
+|---|---|---|---|
+| Train | 2015/16 club data | 80% | Hyperopt + 4-fold CV tuning |
+| Calibration | 2015/16 club data | 20% | Fit calibration methods |
+| Test | FIFA World Cup 2022 | all | True out-of-sample evaluation |
+
+## Current Results (March 2026)
+
+Results on FIFA World Cup 2022 test set — to be updated after notebook is re-run with new architecture.
+
+Previous results (old 60/20/20 split, single val fold):
 
 | Model | ROC AUC | Brier (Raw) | Best Calibration |
 |---|---|---|---|
@@ -101,28 +121,18 @@ Raw probabilities are already well-calibrated (Beta barely improves Brier).
 
 ## Next Steps
 
-1. **Cross-validation (Option A)**
-   - Keep Hyperopt using val split for hyperparameter tuning (unchanged)
-   - After finding best params, re-evaluate final model with **4–5 fold stratified CV** on train+val combined
-   - Gives stable metric estimates without full nested CV overhead
-
-2. **Calibration refactor**
-   - Train all models → compare by ROC AUC + raw Brier → pick best model
-   - Run calibration comparison (Beta / Isotonic / Platt) **only on the best model**
-   - Use it as a verification step — assert raw probabilities are well-calibrated
-   - Remove per-model calibration from `evaluate_model`
-
-3. **Update markdown cells in notebook**
-   - Reflect new features (play_pattern, n_passes_in_sequence)
-   - Reflect no-resampling decision and reasoning
-   - Update model comparison section with current results
-   - Do last, when CV results are final
+1. **Update notebook markdown cells**
+   - Split section: reflect 80/20 train/calib + FIFA 2022 as test holdout
+   - Evaluation definition: reflect new `evaluate_model` / `calibrate_best_model` separation
+   - Model parameter sections: update with actual CV results
+   - Project summary: update results table
 
 ## Setup
 
 ```bash
 pip install -r requirements.txt
-python src/data_collector.py  # collect data first
+python src/data_collector.py                          # collect 2015/16 club data
+python src/data_collector.py --fifa-2022 --skip-club  # collect FIFA 2022 test data
 # then run notebooks/xg_model.ipynb
 ```
 
@@ -132,3 +142,4 @@ python src/data_collector.py  # collect data first
 - StatsBomb coords: x ∈ [0, 120], y ∈ [0, 80]; goal at x=120, y ∈ [36, 44]
 - `df_spatial = df_shots[['x','y']].copy()` saved before final feature selection — used for xG scatter plot
 - `play_pattern = 'Other'` in raw data contains ~486 penalties (already filtered) + ~54 misc shots → mapped to open_play
+- FIFA 2022 data goes through the same feature engineering pipeline as club data

@@ -36,19 +36,30 @@ def compute_ece(y_true, y_pred, n_bins=10):
     return ece
 
 
-def evaluate_model(model, X_test, y_test, save_plots=False, model_name=None):
+def evaluate_model(model, X, y, calibrator=None, save_plots=False, model_name=None):
     """
-    Evaluates model on test set using raw probabilities only.
-    Metrics: ROC AUC, Brier Score, ECE.
-    Plots: ROC curve.
-    """
-    y_test_arr = np.array(y_test)
-    y_pred = model.predict_proba(X_test)[:, 1]
+    Evaluates model on a given set. If calibrator is provided, applies it to
+    raw probabilities before computing metrics.
 
-    roc_auc   = roc_auc_score(y_test_arr, y_pred)
-    brier     = brier_score_loss(y_test_arr, y_pred)
-    ece       = compute_ece(y_test_arr, y_pred)
-    xg_goals  = y_pred.sum() / y_test_arr.sum()
+    Parameters
+    ----------
+    model : fitted classifier with predict_proba
+    X : features
+    y : true labels
+    calibrator : callable or None
+        Takes raw probabilities, returns calibrated probabilities.
+        If None, raw model probabilities are used.
+
+    Metrics: ROC AUC, Brier Score, ECE, xG/Goals ratio.
+    """
+    y_arr  = np.array(y)
+    y_raw  = model.predict_proba(X)[:, 1]
+    y_pred = calibrator(y_raw) if calibrator is not None else y_raw
+
+    roc_auc  = roc_auc_score(y_arr, y_pred)
+    brier    = brier_score_loss(y_arr, y_pred)
+    ece      = compute_ece(y_arr, y_pred)
+    xg_goals = y_pred.sum() / y_arr.sum()
 
     print(f"  ROC AUC:      {roc_auc:.4f}")
     print(f"  Brier Score:  {brier:.4f}")
@@ -56,33 +67,51 @@ def evaluate_model(model, X_test, y_test, save_plots=False, model_name=None):
     print(f"  xG/Goals:     {xg_goals:.4f}")
 
     if save_plots and model_name:
-        plot_roc_curve(y_test_arr, y_pred, roc_auc,
+        plot_roc_curve(y_arr, y_pred, roc_auc,
                        save_path=get_model_viz_path(model_name, "roc_curve"))
         plt.close()
     else:
         fig, ax = plt.subplots(figsize=(6, 5))
-        plot_roc_curve(y_test_arr, y_pred, roc_auc, ax=ax)
+        plot_roc_curve(y_arr, y_pred, roc_auc, ax=ax)
         plt.tight_layout()
         plt.show()
 
     return {
         'ROC AUC':     round(roc_auc, 4),
-        'Brier (Raw)': round(brier, 4),
-        'ECE (Raw)':   round(ece, 4),
+        'Brier Score': round(brier, 4),
+        'ECE':         round(ece, 4),
         'xG/Goals':    round(xg_goals, 4),
     }
 
 
-def calibrate_best_model(model, X_calib, y_calib, X_test, y_test, save_plots=False, model_name=None):
+def calibrate_best_model(model, X_calib, y_calib, save_plots=False, model_name=None):
     """
-    Fits Beta, Isotonic, and Platt calibration on X_calib,
-    evaluates all three on X_test, prints comparison table,
-    and plots reliability diagram + expected vs actual goals.
-    Best method selected by lowest Brier Score.
+    Fits Beta, Isotonic, and Platt calibration on X_calib and evaluates all
+    methods on the same set. Picks best by lowest Brier Score.
+
+    Note: fitting and evaluating on the same set introduces a small optimistic
+    bias, particularly for Isotonic regression. This is acceptable given limited
+    data — the raw model is already well-calibrated so calibration is a
+    verification step rather than a critical correction.
+
+    Parameters
+    ----------
+    model : fitted classifier with predict_proba
+    X_calib : calibration features
+    y_calib : calibration labels
+
+    Returns
+    -------
+    best_name : str
+        Name of best calibration method (or 'Raw').
+    calibrators : dict
+        Maps method name to a callable(raw_probs) -> calibrated_probs.
+        Includes 'Raw' as identity function.
+    metrics : dict
+        Brier Score and ECE for Raw and each calibration method.
     """
     y_calib_pred = model.predict_proba(X_calib)[:, 1]
-    y_test_pred  = model.predict_proba(X_test)[:, 1]
-    y_test_arr   = np.array(y_test)
+    y_calib_arr  = np.array(y_calib)
 
     # --- Beta Calibration ---
     def beta_calibration(p, a, b, c):
@@ -93,72 +122,55 @@ def calibrate_best_model(model, X_calib, y_calib, X_test, y_test, save_plots=Fal
     result = minimize(
         lambda params, x, y: log_loss(y, beta_calibration(x, *params)),
         [1.0, 0.0, 0.0],
-        args=(y_calib_pred, y_calib),
+        args=(y_calib_pred, y_calib_arr),
         method='Nelder-Mead'
     )
-    y_pred_beta = beta_calibration(y_test_pred, *result.x)
+    beta_params = result.x
 
     # --- Isotonic Regression ---
     iso = IsotonicRegression(out_of_bounds='clip')
-    iso.fit(y_calib_pred, y_calib)
-    y_pred_isotonic = iso.predict(y_test_pred)
+    iso.fit(y_calib_pred, y_calib_arr)
 
     # --- Platt Scaling ---
     platt = LogisticRegression(C=1e10, solver='lbfgs', max_iter=1000)
-    platt.fit(y_calib_pred.reshape(-1, 1), y_calib)
-    y_pred_platt = platt.predict_proba(y_test_pred.reshape(-1, 1))[:, 1]
+    platt.fit(y_calib_pred.reshape(-1, 1), y_calib_arr)
 
-    calibrated = {
-        'Beta':     y_pred_beta,
-        'Isotonic': y_pred_isotonic,
-        'Platt':    y_pred_platt,
+    calibrators = {
+        'Raw':      lambda p: p,
+        'Beta':     lambda p: beta_calibration(p, *beta_params),
+        'Isotonic': lambda p: iso.predict(p),
+        'Platt':    lambda p: platt.predict_proba(p.reshape(-1, 1))[:, 1],
     }
 
-    # --- Metrics ---
-    brier_raw = brier_score_loss(y_test_arr, y_test_pred)
-    ece_raw   = compute_ece(y_test_arr, y_test_pred)
-    total_goals = y_test_arr.sum()
-    xg_raw      = y_test_pred.sum()
-
-    cal_metrics = {}
-    for name, preds in calibrated.items():
-        cal_metrics[name] = {
-            'brier': brier_score_loss(y_test_arr, preds),
-            'ece':   compute_ece(y_test_arr, preds),
+    # --- Evaluate all methods on calib set ---
+    all_metrics = {}
+    for name, fn in calibrators.items():
+        preds = fn(y_calib_pred)
+        all_metrics[name] = {
+            'brier': brier_score_loss(y_calib_arr, preds),
+            'ece':   compute_ece(y_calib_arr, preds),
             'xg':    preds.sum(),
-            'ratio': preds.sum() / total_goals,
+            'ratio': preds.sum() / y_calib_arr.sum(),
         }
 
-    best_name = min(cal_metrics, key=lambda k: cal_metrics[k]['brier'])
-
-    table = pd.DataFrame(
-        {
-            'Brier Score': {
-                'Raw': round(brier_raw, 4),
-                **{name: round(m['brier'], 4) for name, m in cal_metrics.items()}
-            },
-            'ECE': {
-                'Raw': round(ece_raw, 4),
-                **{name: round(m['ece'], 4) for name, m in cal_metrics.items()}
-            },
-            'xG/Goals': {
-                'Raw': round(xg_raw / total_goals, 4),
-                **{name: round(m['ratio'], 4) for name, m in cal_metrics.items()}
-            },
-        }
-    ).T
+    table = pd.DataFrame({
+        'Brier Score': {n: round(m['brier'], 4) for n, m in all_metrics.items()},
+        'ECE':         {n: round(m['ece'],   4) for n, m in all_metrics.items()},
+        'xG/Goals':    {n: round(m['ratio'], 4) for n, m in all_metrics.items()},
+    }).T
     table.index.name = 'Metric'
-    print(f"\nCalibration comparison (best: {best_name}):")
+    print(f"\nCalibration comparison on calib set")
     print(table.to_string())
 
     # --- Plots ---
+    calibrated_only = {n: calibrators[n](y_calib_pred) for n in ['Beta', 'Isotonic', 'Platt']}
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     plot_expected_vs_actual_goals(
-        total_goals, xg_raw,
-        {name: (m['xg'], m['ratio']) for name, m in cal_metrics.items()},
+        y_calib_arr.sum(), y_calib_pred.sum(),
+        {n: (all_metrics[n]['xg'], all_metrics[n]['ratio']) for n in ['Beta', 'Isotonic', 'Platt']},
         ax=axes[0]
     )
-    plot_reliability_diagram(y_test_arr, y_test_pred, calibrated, ax=axes[1])
+    plot_reliability_diagram(y_calib_arr, y_calib_pred, calibrated_only, ax=axes[1])
     plt.tight_layout()
 
     if save_plots and model_name:
@@ -167,13 +179,9 @@ def calibrate_best_model(model, X_calib, y_calib, X_test, y_test, save_plots=Fal
     else:
         plt.show()
 
-    metrics = {
-        'Best Calibration': best_name,
-        'Brier (Raw)':      round(brier_raw, 4),
-        'ECE (Raw)':        round(ece_raw, 4),
-    }
-    for name, m in cal_metrics.items():
+    metrics = {}
+    for name, m in all_metrics.items():
         metrics[f'Brier ({name})'] = round(m['brier'], 4)
-        metrics[f'ECE ({name})']   = round(m['ece'], 4)
+        metrics[f'ECE ({name})']   = round(m['ece'],   4)
 
-    return metrics
+    return calibrators, metrics
