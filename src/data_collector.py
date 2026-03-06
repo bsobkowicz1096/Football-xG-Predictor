@@ -142,6 +142,65 @@ def collect_shots_data(
     return all_shots
 
 
+FIFA_WORLD_CUP_2022 = {'competition_id': 43, 'season_id': 106}
+
+
+def collect_fifa_world_cup_2022(
+    save_path=DATA_DIR,
+    include_passes_in_sequence=True,
+):
+    """
+    Retrieves shot data from StatsBomb open data for FIFA World Cup 2022.
+
+    Returns
+    -------
+    pd.DataFrame or None
+    """
+    os.makedirs(save_path, exist_ok=True)
+
+    print("\n--- FIFA World Cup 2022 ---")
+
+    all_matches = sb.matches(
+        competition_id=FIFA_WORLD_CUP_2022['competition_id'],
+        season_id=FIFA_WORLD_CUP_2022['season_id'],
+    )
+    match_ids = list(all_matches['match_id'])
+    print(f"Matches to process: {len(match_ids)}")
+
+    shot_data = []
+
+    for idx, match_id in enumerate(match_ids):
+        print(f"  {idx + 1}/{len(match_ids)}", end='\r')
+        try:
+            events = sb.events(match_id=match_id)
+            events['match_id'] = match_id
+
+            if include_passes_in_sequence:
+                shots = _count_passes_in_sequence(events)
+            else:
+                shots = events[events['type'] == 'Shot'].copy()
+                shots['match_id'] = match_id
+
+            if not shots.empty:
+                shot_data.append(shots)
+
+        except Exception as e:
+            print(f"\n  Error on match {match_id}: {e}")
+
+    if not shot_data:
+        print("No shots found.")
+        return None
+
+    all_shots = pd.concat(shot_data, ignore_index=True)
+    print(f"\nShots collected: {len(all_shots)}")
+
+    path = os.path.join(save_path, 'shots_fifa_world_cup_2022.csv')
+    all_shots.to_csv(path, index=False)
+    print(f"Saved: {path}")
+
+    return all_shots
+
+
 if __name__ == '__main__':
     import argparse
 
@@ -162,11 +221,26 @@ if __name__ == '__main__':
         '--output-dir', default=DATA_DIR,
         help='Output directory for CSV files'
     )
+    parser.add_argument(
+        '--fifa-2022', action='store_true',
+        help='Also collect FIFA World Cup 2022 data (saved as shots_fifa_world_cup_2022.csv)'
+    )
+    parser.add_argument(
+        '--skip-club', action='store_true',
+        help='Skip club league collection (useful when only --fifa-2022 is needed)'
+    )
     args = parser.parse_args()
 
-    collect_shots_data(
-        league=args.leagues,
-        season_name=args.season,
-        save_path=args.output_dir,
-        include_passes_in_sequence=not args.no_passes_in_sequence,
-    )
+    if not args.skip_club:
+        collect_shots_data(
+            league=args.leagues,
+            season_name=args.season,
+            save_path=args.output_dir,
+            include_passes_in_sequence=not args.no_passes_in_sequence,
+        )
+
+    if args.fifa_2022:
+        collect_fifa_world_cup_2022(
+            save_path=args.output_dir,
+            include_passes_in_sequence=not args.no_passes_in_sequence,
+        )
