@@ -2,116 +2,140 @@
 
 ## 🧠 About the Project
 
-An Expected Goals (xG) model that predicts the probability of scoring based on StatsBomb data. The project uses machine learning techniques to analyze factors most influencing shot effectiveness in football. Applied models (Logistic Regression, Random Forest, XGBoost) combined with Beta calibration technique create a highly accurate predictive tool. Analysis results confirm the crucial role of shot geometry and defender influence on goal-scoring probability.
+An Expected Goals (xG) model that predicts the probability of scoring based on StatsBomb open data. The project trains and compares Logistic Regression, Random Forest, and XGBoost using Hyperopt hyperparameter tuning with 4-fold stratified cross-validation. Models are evaluated on a true out-of-sample holdout — the FIFA World Cup 2022 dataset. Raw probabilities are well-calibrated; Beta, Isotonic, and Platt calibration methods are compared as a verification step.
 
 ## 🎯 Motivation
 
-Expected Goals (xG) is one of the most important metrics used in modern football analytics. It allows for evaluating shot quality regardless of whether they resulted in a goal. In this project, I built my own xG model to better understand factors affecting shot effectiveness and create a tool that can be used for match analysis and player evaluation.
+Expected Goals (xG) is one of the most important metrics in modern football analytics. It allows for evaluating shot quality regardless of whether the shot resulted in a goal. In this project, I built my own xG model to better understand factors affecting shot effectiveness and create a tool that can be used for match analysis and player evaluation.
 
 ## 📋 Data
 
-The data used comes from StatsBomb's open dataset from the 2015/2016 season for five top European leagues:
+**Training & calibration**: StatsBomb open dataset, 2015/16 season, five top European leagues:
 - Premier League (England)
 - La Liga (Spain)
 - Bundesliga (Germany)
 - Serie A (Italy)
 - Ligue 1 (France)
 
-The data contains detailed information about each shot, including position on the pitch, shot type, circumstances of the shot, and positioning of other players at the moment of the shot.
+**Test holdout**: FIFA World Cup 2022 — collected separately, never seen during training or calibration.
 
-**Note**: The repository does not include data files by default. You need to run the `data_collector.ipynb` notebook first to download the data from StatsBomb's open dataset.
+The data contains detailed information about each shot: position on the pitch, shot type, freeze-frame data (goalkeeper and defender positions), play pattern, and pass sequence context.
 
-https://github.com/statsbomb/open-data
+**Note**: Data files are not included in the repository. Collect them by running:
+
+```bash
+python src/data_collector.py                          # 2015/16 club data
+python src/data_collector.py --fifa-2022 --skip-club  # FIFA 2022 test holdout
+```
+
+Source: https://github.com/statsbomb/open-data
 
 ## 🔍 Methodology
 
-### Data Preparation
-- Extraction of relevant shot-related variables
-- Transformation of raw location data into useful geometric features
-- Categorization of shot types and body parts used for shots
+### Data Split
 
-### Feature Engineering
-- **Geometric**: shot angle, distance from goal
-- **Contextual**: number of defenders on shot line, goalkeeper presence
-- **Technical**: dominant vs non-dominant foot shots, first-time shots
-- **Situational**: shots under pressure, shots after dribbling
+| Set | Source | Size | Purpose |
+|---|---|---|---|
+| Train | 2015/16 club data | 80% | Hyperopt + 4-fold CV tuning |
+| Calibration | 2015/16 club data | 20% | Fit calibration methods |
+| Test | FIFA World Cup 2022 | all | True out-of-sample evaluation |
+
+### Feature Engineering (15 features)
+
+- **Geometric**: shot angle (log-transformed), distance from goal
+- **Freeze-frame**: defenders in shot path (capped at 3), goalkeeper in path, goalkeeper distance ratio
+- **Technical**: dominant/non-dominant foot, header, first-time shot
+- **Contextual**: under pressure, passes in sequence (log-transformed)
+- **Situational**: play pattern groups — corner, set piece, counter, open play
 
 ### Modeling
-Testing and comparison of three algorithms:
+
+Three algorithms trained with **Hyperopt** (TPE) and **4-fold stratified CV** as the objective:
 1. Logistic Regression
 2. Random Forest
 3. XGBoost
 
 ### Model Calibration
-Application of Beta Calibration technique to calibrate probabilities, which significantly improved model prediction quality.
+
+Beta, Isotonic, and Platt calibration methods are fitted on the calibration set and compared by Brier Score and ECE. Raw probabilities are already well-calibrated — calibration is a verification step rather than a critical correction.
 
 ## 📈 Key Results
 
-### Model Comparison
-| Model               | ROC AUC | Brier Score | Log Loss | xG/Goals Ratio |
-|---------------------|---------|-------------|----------|----------------|
-| Logistic Regression | 0.796   | 0.073       | 0.257    | 0.98           |
-| Random Forest       | 0.796   | 0.074       | 0.259    | 0.99           |
-| XGBoost             | 0.798   | 0.073       | 0.257    | 0.98           |
+Results on FIFA World Cup 2022 test set (previous run, old 60/20/20 split):
+
+| Model | ROC AUC | Brier Score |
+|---|---|---|
+| Logistic Regression | 0.8007 | 0.0720 |
+| Random Forest | 0.8020 | 0.0722 |
+| **XGBoost** | **0.8034** | **0.0714** |
 
 ### Key Findings
-1. **Shot geometry** is crucial - shot angle and distance from goal are the strongest predictors
-2. **Defenders on shot line** - each additional defender significantly decreases goal-scoring probability
+1. **Shot geometry** is crucial — shot angle and distance from goal are the strongest predictors
+2. **Defenders on shot line** — each additional defender significantly decreases goal-scoring probability
 3. **First-time shots** have higher effectiveness than those preceded by ball control
-4. **Model calibration** is crucial - all models before calibration significantly overestimated probabilities
+4. **Raw probabilities are well-calibrated** — Beta calibration provides only marginal improvement
 
 ## 💻 Technologies
 
 - **Language**: Python 3.7+
-- **Data Analysis**: Pandas, NumPy
+- **Data Analysis**: Pandas, NumPy, SciPy
 - **ML Models**: Scikit-learn, XGBoost
+- **Hyperparameter Tuning**: Hyperopt (TPE)
+- **Explainability**: SHAP
 - **Visualization**: Matplotlib, Seaborn, Mplsoccer
 - **Data Source**: StatsBombPy
 
 ## 📁 Project Structure
+
 ```
 Football-xG-Predictor/
-├── notebooks/                 
-│   ├── data_collection.py      # Data collection script
-│   └── xg_model.ipynb          # Main notebook with xG model
-├── src/                        
-│   ├── __init__.py             # Package initialization file
-│   ├── preprocessing.py        # Data preprocessing functions
-│   ├── feature_engineering.py  # Feature engineering
-│   ├── modeling.py             # Model implementation
-│   ├── evaluation.py           # Metrics and model evaluation
-│   └── visualization.py        # Visualizations
-├── data/                       # Data folder (created after running data_collector.ipynb)
-├── assets/                     # Graphics and visualizations
-├── requirements.txt            # Dependencies
-└── README.md                   # Project description / this file
+├── notebooks/
+│   └── xg_model.ipynb             # Main pipeline: EDA → features → training → evaluation
+├── src/
+│   ├── data_collector.py          # StatsBomb data collection (CLI)
+│   ├── data_processing.py         # load_data, clean_data, select_features
+│   ├── feature_engineering.py     # Geometry, freeze-frame, body part, play pattern transforms
+│   ├── models.py                  # train_logistic_regression/random_forest/xgboost + CV objective
+│   ├── evaluation.py              # evaluate_model + calibrate_best_model
+│   └── visualization.py           # All plot helpers
+├── assets/
+│   ├── eda/                       # EDA visualizations
+│   └── models/
+│       └── xgboost/               # Model plots (ROC, calibration, SHAP, xG scatter)
+├── data/                          # Not in repo — run src/data_collector.py first
+├── requirements.txt
+└── README.md
 ```
 
-## 🚀 How to Download and Run the Project
+## 🚀 How to Run the Project
 
 1. Clone the repository:
-   
 ```bash
 git clone https://github.com/bsobkowicz1096/Football-xG-Predictor.git
-```
-2. Navigate to the project directory:
-
-```bash
 cd Football-xG-Predictor
 ```
-3. Create a virtual environment (optional but recommended):
+
+2. Create a virtual environment (optional but recommended):
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Linux/macOS
-venv\Scripts\activate     # On Windows
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
 ```
-4. Install dependencies:
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+4. Collect data:
+```bash
+python src/data_collector.py
+python src/data_collector.py --fifa-2022 --skip-club
+```
+
 5. Run the notebook:
 ```bash
-jupyter notebook notebooks/football_xg_predictor.ipynb
+jupyter notebook notebooks/xg_model.ipynb
 ```
 
 Note: The project uses publicly available StatsBomb data, used in accordance with their license terms.

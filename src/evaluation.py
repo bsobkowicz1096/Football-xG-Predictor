@@ -13,7 +13,7 @@ from visualization import plot_roc_curve, plot_expected_vs_actual_goals, plot_re
 
 def get_model_viz_path(model_name, viz_type):
     """Generates standard path for model visualizations."""
-    path = f"assets/models/{model_name}/{viz_type}.png"
+    path = f"../assets/models/{model_name}/{viz_type}.png"
     os.makedirs(os.path.dirname(path), exist_ok=True)
     return path
 

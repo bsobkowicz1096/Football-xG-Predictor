@@ -9,9 +9,6 @@ __pycache__/
 data/
 *.csv
 
-# Assets (generated plots)
-assets/
-
 # Models (large binary files)
 models/
 

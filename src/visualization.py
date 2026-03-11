@@ -659,9 +659,10 @@ def plot_xg_shap_summary(model, X_test, model_name, X_background=None, ax=None, 
     plt.figure(figsize=(12, 8))
     shap.summary_plot(shap_values, X_test, show=False, cmap='inferno_r')
     plt.title(f"SHAP analysis - {model_name}")
-    plt.show()
 
-    if save_path and ax.get_figure() is not None:
+    if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"SHAP plot {save_path}")
+        print(f"SHAP plot saved to {save_path}")
+
+    plt.show()

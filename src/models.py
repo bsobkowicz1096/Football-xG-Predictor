@@ -33,7 +33,7 @@ def _cv_objective(model_cls, params, X_train, y_train):
     return np.mean(auc_scores), np.std(auc_scores)
 
 
-def train_logistic_regression(X_train, y_train, max_evals=5):
+def train_logistic_regression(X_train, y_train, max_evals=30):
     """Trains Logistic Regression using Hyperopt with 4-fold CV objective.
     Returns model and CV metrics (no test set used)."""
     space = {
@@ -72,7 +72,7 @@ def train_logistic_regression(X_train, y_train, max_evals=5):
     return best_model, {'CV ROC AUC': round(mean_cv_auc, 4), 'CV ROC AUC std': round(std_cv_auc, 4)}
 
 
-def train_random_forest(X_train, y_train, max_evals=5):
+def train_random_forest(X_train, y_train, max_evals=30):
     """Trains Random Forest using Hyperopt with 4-fold CV objective.
     Returns model and CV metrics (no test set used)."""
     space = {
@@ -118,7 +118,7 @@ def train_random_forest(X_train, y_train, max_evals=5):
     return best_model, {'CV ROC AUC': round(mean_cv_auc, 4), 'CV ROC AUC std': round(std_cv_auc, 4)}
 
 
-def train_xgboost(X_train, y_train, max_evals=5):
+def train_xgboost(X_train, y_train, max_evals=30):
     """Trains XGBoost using Hyperopt with 4-fold CV objective.
     Returns model and CV metrics (no test set used)."""
     space = {
