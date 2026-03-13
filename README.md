@@ -59,15 +59,50 @@ Three algorithms trained with **Hyperopt** (TPE) and **4-fold stratified CV** as
 
 Beta, Isotonic, and Platt calibration methods are fitted on the calibration set and compared by Brier Score and ECE. Raw probabilities are already well-calibrated — calibration is a verification step rather than a critical correction.
 
+## 📊 EDA Highlights
+
+**Shot success heatmap** — higher goal probability in the central zone close to goal:
+
+![Shot Success Heatmap](assets/eda/shot_success_heatmap.png)
+
+**Goal rate by body part** — headers and non-dominant foot shots have lower conversion rates overall:
+
+![Body Part](assets/eda/body_part.png)
+
+**Body part by distance quantile** — context matters: dominant foot advantage shrinks at close range where headers are more effective:
+
+![Body Part by Distance Quantile](assets/eda/body_part_by_distance_quantile.png)
+
 ## 📈 Key Results
 
-Results on FIFA World Cup 2022 test set (previous run, old 60/20/20 split):
+Cross-validation on 2015/16 club data (4-fold stratified):
 
-| Model | ROC AUC | Brier Score |
+| Model | CV ROC AUC | CV ROC AUC std |
 |---|---|---|
-| Logistic Regression | 0.8007 | 0.0720 |
-| Random Forest | 0.8020 | 0.0722 |
-| **XGBoost** | **0.8034** | **0.0714** |
+| Logistic Regression | 0.8065 | 0.0043 |
+| Random Forest | 0.8094 | 0.0054 |
+| **XGBoost** | **0.8134** | **0.0040** |
+
+FIFA World Cup 2022 test set — XGBoost (raw probabilities, true out-of-sample):
+
+| Metric | Value |
+|---|---|
+| ROC AUC | 0.8051 |
+| Brier Score | 0.0765 |
+| ECE | 0.0178 |
+| xG / Goals | 0.9162 |
+
+**ROC Curve:**
+
+![ROC Curve](assets/models/xgboost/roc_curve.png)
+
+**Predicted xG per shot on the pitch** (FIFA World Cup 2022, XGBoost):
+
+![xG Scatter](assets/models/xgboost/xg_scatter.png)
+
+### Feature Importance (SHAP)
+
+![SHAP Summary](assets/models/xgboost/shap_summary.png)
 
 ### Key Findings
 1. **Shot geometry** is crucial — shot angle and distance from goal are the strongest predictors

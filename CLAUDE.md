@@ -107,17 +107,24 @@ Football-xG-Predictor/
 
 ## Current Results (March 2026)
 
-Results on FIFA World Cup 2022 test set — to be updated after notebook is re-run with new architecture.
+CV results (4-fold stratified, 2015/16 club data):
 
-Previous results (old 60/20/20 split, single val fold):
+| Model | CV ROC AUC | CV ROC AUC std |
+|---|---|---|
+| Logistic Regression | 0.8065 | 0.0043 |
+| Random Forest | 0.8094 | 0.0054 |
+| **XGBoost** | **0.8134** | **0.0040** |
 
-| Model | ROC AUC | Brier (Raw) | Best Calibration |
-|---|---|---|---|
-| Logistic Regression | 0.8007 | 0.0720 | Beta |
-| Random Forest | 0.8020 | 0.0722 | Beta |
-| **XGBoost** | **0.8034** | **0.0714** | Beta |
+FIFA World Cup 2022 test set (XGBoost — best model, raw probabilities):
 
-Raw probabilities are already well-calibrated (Beta barely improves Brier).
+| Metric | Value |
+|---|---|
+| ROC AUC | 0.8051 |
+| Brier Score | 0.0765 |
+| ECE | 0.0178 |
+| xG/Goals | 0.9162 |
+
+Raw probabilities selected — Isotonic achieved lower Brier (0.0701 vs 0.0708) but ECE = 0.0000 indicates overfitting on the calibration set.
 
 ## Next Steps
 
