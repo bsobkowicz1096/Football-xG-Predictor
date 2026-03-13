@@ -10,7 +10,7 @@ data/
 *.csv
 
 # Models (large binary files)
-models/
+/models/
 
 # Claude Code local files
 .claude/

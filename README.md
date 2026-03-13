@@ -65,11 +65,11 @@ Beta, Isotonic, and Platt calibration methods are fitted on the calibration set 
 
 ![Shot Success Heatmap](assets/eda/shot_success_heatmap.png)
 
-**Goal rate by body part** — headers and non-dominant foot shots have lower conversion rates overall:
+**Goal rate by body part** — at first glance, headers and non-dominant foot shots seem to outperform dominant foot shots:
 
 ![Body Part](assets/eda/body_part.png)
 
-**Body part by distance quantile** — context matters: dominant foot advantage shrinks at close range where headers are more effective:
+**Breaking it down by distance** reveals the true picture — and a great example of why domain knowledge matters:
 
 ![Body Part by Distance Quantile](assets/eda/body_part_by_distance_quantile.png)
 
